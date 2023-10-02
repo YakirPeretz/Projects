@@ -10,27 +10,34 @@ module YakiRouter_Top#(
 )
 ( 
    // Port Declarations
-   input [Count_bits-1:0] i_div_count,
-   input [Count_bits-1:0] i_duty_count,
-   input i_rstn,
-   input i_enable,
-   output  wire                     o_div_clk
+   // Inputs
+   input logic i_clk,
+   input logic i_rstn,
+   // channel 0 input
+   input logic i_ch_0_en,
+   input logic [data_size-1:0] i_data_in_0,
+   // channel 1 input
+   input logic i_ch_1_en,
+   input logic [data_size-1:0] i_data_in_1,
+   /// Outputs
+   // general outputs
+   output logic o_busy,
+   output logic o_error,
+   // channel 0 outputs
+   output logic [data_size-1:0] o_data_out_0,
+   output logic o_ch_0_vld,
+   // channel 1 outputs
+   output logic [data_size-1:0] o_data_out_1,
+   output logic o_ch_1_vld,
+   // channel 2 outputs
+   output logic [data_size-1:0] o_data_out_2,
+   output logic o_ch_2_vld,
+   // channel 3 outputs
+   output logic [data_size-1:0] o_data_out_3,
+   output logic o_ch_3_vld,
 );
 
-wire base_clk;
 
-Rocl #(.Nde(Nde))  clk_gen(
-   .o_clk(base_clk)
-);
-
-Freq_Duty_div #(.Count_bits(Count_bits)) Freq_Duty_div_m (
-.i_clk(base_clk),
-.i_div_count(i_div_count),
-.i_duty_count(i_duty_count),
-.i_rstn(i_rstn),
-.i_enable(i_enable),
-.o_div_clk(o_div_clk)
-);
 
 
 endmodule
