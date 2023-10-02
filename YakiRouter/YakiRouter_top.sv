@@ -1,5 +1,5 @@
 //
-// Top module for Freq divider and duty change
+// Top module for YakiRouter: 2X4 router
 // Created by - Yakir Peretz
 
 `resetall
