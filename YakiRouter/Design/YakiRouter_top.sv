@@ -21,7 +21,8 @@ module YakiRouter_Top#(
    input logic [data_size-1:0] i_data_in_1,
    /// Outputs
    // general outputs
-   output logic o_busy,
+   output logic o_chn_0_busy,
+   output logic o_chn_1_busy,
    output logic o_error,
    // channel 0 outputs
    output logic [data_size-1:0] o_data_out_0,
