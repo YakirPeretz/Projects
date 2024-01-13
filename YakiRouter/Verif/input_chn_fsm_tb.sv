@@ -13,7 +13,7 @@ module in_chn_fsm_tb#(
 );
 
 chn_vif m_vif();
-
+int total_errors = 0;
 InChannel_fsm  #(.data_size(data_size),.pkt_length_bits(pkt_length_bits),.pkt_addr_bits(pkt_addr_bits)) In_chn_fsm (
     // inputs
     .i_clk(m_vif.clk),
@@ -24,10 +24,14 @@ InChannel_fsm  #(.data_size(data_size),.pkt_length_bits(pkt_length_bits),.pkt_ad
 // outputs
     .o_busy(m_vif.busy),
     .o_error(m_vif.error),
-    .o_data_out(m_vif.data_out),
-    .o_pkt_to_fifo_en(m_vif.pkt_to_fifo_en)
+    .o_data2fifo_out(m_vif.data_out),
+    .o_pkt_to_fifo_en0(m_vif.pkt_to_fifo_en0),
+    .o_pkt_to_fifo_en1(m_vif.pkt_to_fifo_en1),
+    .o_pkt_to_fifo_en2(m_vif.pkt_to_fifo_en2),
+    .o_pkt_to_fifo_en3(m_vif.pkt_to_fifo_en3)
 );
 
+assign m_vif.pkt_address = In_chn_fsm.pkt_addr;
 always begin
   #100ps m_vif.clk = ~m_vif.clk;
 end
@@ -46,6 +50,8 @@ initial begin
   repeat (5) @(posedge m_vif.clk);
   test1.run();
   repeat (10) @(posedge m_vif.clk);
+  total_errors = test1.m_chn_in_env.m_chn_in_scb.num_of_errors + m_vif.num_of_errors;
+  $display("Num of errors = %0d. scb errors = %0d. vif errors = %0d",total_errors,test1.m_chn_in_env.m_chn_in_scb.num_of_errors,m_vif.num_of_errors);
   $stop;
 end
 

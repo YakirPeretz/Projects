@@ -6,53 +6,51 @@
 `include "chn_in_if.sv"
 
 package verif_env_pkg;
-
     class packet_item#(
-        data_size          = 8,
-        pkt_length_bits    = 5,
-        pkt_addr_bits      = data_size-pkt_length_bits // 8-5 = 3
-    );
+    data_size          = 8,
+    pkt_length_bits    = 5,
+    pkt_addr_bits      = data_size-pkt_length_bits // 8-5 = 3
+);
 
-        rand bit [pkt_length_bits-1:0] m_pkt_length;
-        rand bit [pkt_addr_bits-1:0]    m_pkt_addr;
-        rand bit [data_size-1:0]   m_pkt_data[$];
-        rand bit [data_size-1:0]    m_pkt_parity;
-        rand bit                    m_good_parity;
-        rand int unsigned           m_delay;
+    rand bit [pkt_length_bits-1:0] m_pkt_length;
+    rand bit [pkt_addr_bits-1:0]    m_pkt_addr;
+    rand bit [data_size-1:0]   m_pkt_data[$];
+    rand bit [data_size-1:0]    m_pkt_parity;
+    rand bit                    m_good_parity;
+    rand int unsigned           m_delay;
 
-        constraint pkt__c {
-            m_pkt_length inside {[1:31]};
-            m_pkt_addr < 4;
-            m_pkt_data.size() == m_pkt_length -1;
-            m_good_parity dist {1:=90,0:=0};
-            m_delay inside {[2:30]};
-        }
+    constraint pkt__c {
+        m_pkt_length inside {[1:31]};
+        m_pkt_addr < 4;
+        m_pkt_data.size() == m_pkt_length -1;
+        m_good_parity dist {1:=90,0:=0};
+        m_delay inside {[2:30]};
+    }
 
-        function void print(string tag = "");
-            $display("T = %0t : [%s] - pkt_length = %0d,pkt_addr = %0d,pkt_data.size() = %0d\npkt_data = %p\npkt_parity = 'h%h(8'b%b), m_good_parity = %b",$time,tag,m_pkt_length,m_pkt_addr,m_pkt_data.size(),m_pkt_data,m_pkt_parity,m_pkt_parity,m_good_parity);
-        endfunction
+    function void print(string tag = "");
+        $display("T = %0t : [%s] - pkt_length = %0d,pkt_addr = %0d,pkt_data.size() = %0d\npkt_data = %p\npkt_parity = 'h%h(8'b%b), m_good_parity = %b",$time,tag,m_pkt_length,m_pkt_addr,m_pkt_data.size(),m_pkt_data,m_pkt_parity,m_pkt_parity,m_good_parity);
+    endfunction
 
-        function [data_size-1:0] calc_parity();
-            bit [data_size-1:0] calc_par;
-            calc_par = {m_pkt_length,m_pkt_addr};
-            for (int i = 0; i < m_pkt_length ; i++)
-                calc_par = calc_par ^ m_pkt_data[i];
-            return calc_par;
-        endfunction
+    function [data_size-1:0] calc_parity();
+        bit [data_size-1:0] calc_par;
+        calc_par = {m_pkt_length,m_pkt_addr};
+        for (int i = 0; i < m_pkt_length ; i++)
+            calc_par = calc_par ^ m_pkt_data[i];
+        return calc_par;
+    endfunction
 
-        function void set_parity();
-            m_pkt_parity = calc_parity();
-            if(!m_good_parity)
-                m_pkt_parity = ~m_pkt_parity;
+    function void set_parity();
+        m_pkt_parity = calc_parity();
+        if(!m_good_parity)
+            m_pkt_parity = ~m_pkt_parity;
 
-        endfunction
+    endfunction
 
-        function [data_size-1:0] get_header;
-            return {m_pkt_length,m_pkt_addr};
-        endfunction
+    function [data_size-1:0] get_header;
+        return {m_pkt_length,m_pkt_addr};
+    endfunction
 
-    endclass
-
+endclass
     class gen#(
         data_size          = 8,
         pkt_length_bits    = 5,
@@ -60,7 +58,7 @@ package verif_env_pkg;
     );
         mailbox drv_mbx;
         event drv_done;
-        int m_num_of_iter = 20;
+        int m_num_of_iter = 500;
         bit [data_size-1:0]   m_data;
         task run();
             for (int i = 0; i < m_num_of_iter ; i++)
@@ -84,7 +82,25 @@ package verif_env_pkg;
         virtual chn_vif m_chn_vif;
         event drv_done;
         mailbox drv_mbx;
-
+        task drive_data(packet_item pkt_item);
+            @(posedge m_chn_vif.clk);
+            m_chn_vif.chn_en <= 1'b1;
+            $display("T = %0t : [DRIVE_DATA] - chn_en high",$time);
+            @(negedge m_chn_vif.clk);
+            $display("T = %0t : [DRIVE_DATA] - Driving pkt header = 8'h%h",$time,pkt_item.get_header());
+            m_chn_vif.data_in <= pkt_item.get_header();
+            for(int i = 0 ; i < pkt_item.m_pkt_length -1 ; i++)
+            begin
+                @(negedge m_chn_vif.clk);
+                $display("T = %0t : [DRIVE_DATA] - i = %0d. Driving data pkt = 8'h%h",$time,i,pkt_item.m_pkt_data[i]);
+                m_chn_vif.data_in <= pkt_item.m_pkt_data[i];
+            end 
+            @(negedge m_chn_vif.clk);
+            $display("T = %0t : [DRIVE_DATA] - Driving pkt parity = 8'h%h",$time,pkt_item.m_pkt_parity);
+            m_chn_vif.data_in <= pkt_item.m_pkt_parity;
+            @(posedge m_chn_vif.clk);
+            m_chn_vif.chn_en <= 1'b0;
+        endtask
         task run();
             forever 
             begin
@@ -92,24 +108,7 @@ package verif_env_pkg;
                 drv_mbx.get(pkt_item);
                 pkt_item.print("DRIVER");
                 pkt_item.set_parity();
-                @(posedge m_chn_vif.clk);
-                m_chn_vif.chn_en <= 1'b1;
-                $display("T = %0t : [DRIVER] - chn_en high",$time);
-                @(posedge m_chn_vif.clk);
-                @(m_chn_vif.data_drive_cb);
-                $display("T = %0t : [DRIVER] - Driving pkt header = 8'h%h",$time,pkt_item.get_header());
-                m_chn_vif.data_drive_cb.data_in <= pkt_item.get_header();
-                for(int i = 0 ; i < pkt_item.m_pkt_length -1 ; i++)
-                begin
-                    @(m_chn_vif.data_drive_cb);
-                    $display("T = %0t : [DRIVER] - i = %0d. Driving data pkt = 8'h%h",$time,i,pkt_item.m_pkt_data[i]);
-                    m_chn_vif.data_drive_cb.data_in <= pkt_item.m_pkt_data[i];
-                end 
-                @(m_chn_vif.data_drive_cb);
-                $display("T = %0t : [DRIVER] - Driving pkt parity = 8'h%h",$time,pkt_item.m_pkt_parity);
-                m_chn_vif.data_drive_cb.data_in <= pkt_item.m_pkt_parity;
-                @(posedge m_chn_vif.clk);
-                m_chn_vif.chn_en <= 1'b0;
+                drive_data(pkt_item);
                 $display("T = %0t : [DRIVER] - Delay clk before next packet = %0d",$time,pkt_item.m_delay);
                 repeat(pkt_item.m_delay)
                     @(posedge m_chn_vif.clk);
@@ -137,7 +136,7 @@ package verif_env_pkg;
                 @(posedge m_chn_vif.chn_en);
                 $display("T = %0t : [Monitor_IN] - chn_en asserted" , $time);
                 @(posedge m_chn_vif.clk);
-                @(posedge m_chn_vif.clk);
+                // @(posedge m_chn_vif.clk);
                 data_temp = m_chn_vif.data_in;
                 pkt_item.m_pkt_length = data_temp[data_size-1:data_size-pkt_length_bits];
                 pkt_item.m_pkt_addr = data_temp[pkt_addr_bits-1:0];
@@ -179,17 +178,35 @@ package verif_env_pkg;
         data_size          = 8,
         pkt_length_bits    = 5,
         pkt_addr_bits      = data_size-pkt_length_bits // 8-5 = 3
-    );
+        );
         virtual chn_vif m_chn_vif;
         mailbox scb_mbx_out;
         bit [data_size-1:0] data_temp;
+        int pkt_address = 0;
         task run();
             forever begin
                 packet_item pkt_item = new();
-                @(posedge m_chn_vif.pkt_to_fifo_en);
+                fork 
+                    begin
+                        @(posedge m_chn_vif.pkt_to_fifo_en0);
+                        pkt_address = 0;
+                    end
+                    begin
+                        @(posedge m_chn_vif.pkt_to_fifo_en1);
+                        pkt_address = 1;
+                    end 
+                    begin
+                        @(posedge m_chn_vif.pkt_to_fifo_en2);
+                        pkt_address = 2;
+                    end 
+                    begin
+                        @(posedge m_chn_vif.pkt_to_fifo_en3);
+                        pkt_address = 3;
+                    end 
+                join_any
+                disable fork;
                 $display("T = %0t : [Monitor_OUT] - pkt_to_fifo_en asserted",$time);
-                @(posedge m_chn_vif.clk);
-                @(posedge m_chn_vif.clk);
+                @(negedge m_chn_vif.clk);
                 data_temp = m_chn_vif.data_out;
                 pkt_item.m_pkt_length = data_temp[data_size-1:data_size-pkt_length_bits];
                 pkt_item.m_pkt_addr = data_temp[pkt_addr_bits-1:0];
@@ -198,7 +215,7 @@ package verif_env_pkg;
                     begin
                         for( int i =0; i< pkt_item.m_pkt_length; i++)
                         begin
-                            @(posedge m_chn_vif.clk);
+                            @(negedge m_chn_vif.clk);
                             data_temp = m_chn_vif.data_out;
                             $display("T = %0t : [Monitor_OUT] - Packet data %0d: 8'h%h",$time,i,data_temp);
                             if(i == pkt_item.m_pkt_length - 1)
@@ -214,7 +231,13 @@ package verif_env_pkg;
                         end 
                     end
                     begin
-                        @(negedge m_chn_vif.pkt_to_fifo_en);
+                        case(pkt_address)
+                            0: @(negedge m_chn_vif.pkt_to_fifo_en0);
+                            1: @(negedge m_chn_vif.pkt_to_fifo_en1);
+                            2: @(negedge m_chn_vif.pkt_to_fifo_en2);
+                            3: @(negedge m_chn_vif.pkt_to_fifo_en3);
+                        endcase
+                        
                         $display("T = %0t : [Monitor_OUT] - pkt_to_fifo_en deasserted",$time);
                     end 
                 join_any
@@ -234,6 +257,7 @@ package verif_env_pkg;
     );
         mailbox scb_mbx_out;
         mailbox scb_mbx_in;
+        int num_of_errors = 0;
 
         task run();
             forever 
@@ -245,17 +269,28 @@ package verif_env_pkg;
                 scb_mbx_out.get(pkt_item_out);
                 pkt_item_out.print("SCB");
                 if(pkt_item_in.m_pkt_length != pkt_item_out.m_pkt_length)
-                    $display("T = %0d : ERROR! pkt_length mismatch! pkt_item_in.m_pkt_length = %0d, pkt_item_out.m_pkt_length = %0d",$time,pkt_item_in.m_pkt_length,pkt_item_out.m_pkt_length);
+                begin
+                    num_of_errors+=1;
+                    $display("********* T = %0d : ERROR! pkt_length mismatch! pkt_item_in.m_pkt_length = %0d, pkt_item_out.m_pkt_length = %0d",$time,pkt_item_in.m_pkt_length,pkt_item_out.m_pkt_length);
+                end
                 if(pkt_item_in.m_pkt_addr != pkt_item_out.m_pkt_addr)
-                    $display("T = %0d : ERROR! pkt_addr mismatch! pkt_item_in.m_pkt_addr = %0d, pkt_item_out.m_pkt_addr = %0d",$time,pkt_item_in.m_pkt_addr,pkt_item_out.m_pkt_addr);
-                
+                begin
+                    num_of_errors+=1;
+                    $display("********* T = %0d : ERROR! pkt_addr mismatch! pkt_item_in.m_pkt_addr = %0d, pkt_item_out.m_pkt_addr = %0d",$time,pkt_item_in.m_pkt_addr,pkt_item_out.m_pkt_addr);
+                end
                 for (int i = 0; i < pkt_item_in.m_pkt_data.size(); i++)
                 begin
                     if(pkt_item_in.m_pkt_data[i] != pkt_item_out.m_pkt_data[i])
-                        $display("T = %0d : ERROR! pkt_data[%0d] mismatch! pkt_item_in.pkt_data[%0d] = %0d, pkt_item_out.pkt_data[%0d] = %0d",$time,i,i,pkt_item_in.m_pkt_data[i],i,pkt_item_out.m_pkt_data[i]);
+                    begin
+                        num_of_errors+=1;
+                        $display("********* T = %0d : ERROR! pkt_data[%0d] mismatch! pkt_item_in.pkt_data[%0d] = %0d, pkt_item_out.pkt_data[%0d] = %0d",$time,i,i,pkt_item_in.m_pkt_data[i],i,pkt_item_out.m_pkt_data[i]);
+                    end
                 end 
                 if(pkt_item_in.m_pkt_parity != pkt_item_out.m_pkt_parity)
-                    $display("T = %0d : ERROR! m_pkt_parity mismatch! pkt_item_in.m_pkt_parity = %0d, pkt_item_out.m_pkt_parity = %0d",$time,pkt_item_in.m_pkt_parity,pkt_item_out.m_pkt_parity);
+                begin
+                    num_of_errors+=1;
+                    $display("********* T = %0d : ERROR! m_pkt_parity mismatch! pkt_item_in.m_pkt_parity = %0d, pkt_item_out.m_pkt_parity = %0d",$time,pkt_item_in.m_pkt_parity,pkt_item_out.m_pkt_parity);
+                end 
             end     
         endtask
 
