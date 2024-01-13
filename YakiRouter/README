@@ -1,0 +1,14 @@
+This is my Router 2X4 router.
+In this project I am going to Implement a router with 2 input channels and 4 output channels.
+This project is still ongoing.
+Project steps:
+1. Define the Router architecture  - DONE
+2. Build and implement the blocks:
+    a. input channel - Done
+    b. output channel(fifo) - Ongoing
+    c. Register block - TODO
+3. Build verification env to each block:
+    a. input channel - Done
+    b. output channel - TODO
+    c. Register block - TODO
+    d. Top - TODO
