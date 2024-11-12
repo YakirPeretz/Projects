@@ -8,14 +8,14 @@ class fifo_read_agent extends uvm_agent;
     fifo_read_driver m_read_driver;
     fifo_read_sequencer #(read_fifo_item) m_read_sequencer;
 
-    extern function new (string name = "fifo_read_agent", uvm_componenct = null);
+    extern function new (string name = "fifo_read_agent", uvm_component parent= null);
     extern function void build_phase (uvm_phase phase);
     extern function void connect_phase(uvm_phase phase);
 
 endclass
 
-function fifo_read_agent::new(string name = "fifo_read_agent", uvm_componenct = null);
-    super.new(name.parent);
+function fifo_read_agent::new(string name = "fifo_read_agent", uvm_component parent = null);
+    super.new(name,parent);
 
 endfunction
 

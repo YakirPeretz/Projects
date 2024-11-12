@@ -8,14 +8,14 @@ class fifo_write_agent extends uvm_agent;
     fifo_write_driver m_write_driver;
     fifo_write_sequencer #(write_fifo_item) m_write_sequencer;
 
-    extern function new (string name = "fifo_write_agent", uvm_componenct = null);
+    extern function new (string name = "fifo_write_agent", uvm_component parent= null);
     extern function void build_phase (uvm_phase phase);
     extern function void connect_phase(uvm_phase phase);
 
 endclass
 
-function fifo_write_agent::new(string name = "fifo_write_agent", uvm_componenct = null);
-    super.new(name.parent);
+function fifo_write_agent::new(string name = "fifo_write_agent", uvm_component parent= null);
+    super.new(name,parent);
 
 endfunction
 
