@@ -2,7 +2,7 @@
 // Create By: Yakir Peretz
 
 `resetall
-`timescale 1ps/1ps
+`timescale 1ns/1ps
 module YP_sync_fifo #( // Parameters
     parameter DATA_WIDTH    = 8,
     parameter FIFO_DEPTH    = 32
@@ -52,7 +52,7 @@ end
 assign en_rd = ~empty & i_rd_en;
 always_ff @(posedge i_clk) begin
     if(en_rd) begin
-        o_data2fifo_out <= yp_fifo[rd_ptr[WR_RD_WIDTH-1:0]];
+        o_data_out <= yp_fifo[rd_ptr[WR_RD_WIDTH-1:0]];
     end 
 end 
 always_ff @(posedge i_clk) begin
