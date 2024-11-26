@@ -19,10 +19,8 @@ endfunction
 
 function void fifo_read_driver::build_phase(uvm_phase phase);
     super.build_phase(phase);
-    if(! uvm_config_db#(YP_sync_fifo_if)::get(this, "", vif, vif)) 
-    begin
+    if(! uvm_config_db#(YP_sync_fifo_if)::get(this, "", vif, vif))  begin
         `uvm_fatal(get_name(), "YP_sync_fifo_if is missing from config_db")
-        
     end 
 endfunction
 

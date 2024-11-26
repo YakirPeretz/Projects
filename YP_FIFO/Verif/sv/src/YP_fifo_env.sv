@@ -2,7 +2,7 @@
 // Create By: Yakir Peretz
 
 
-class fifo_env #(int unsigned FIFO_DEPTH = 32,int unsigned DATA_WIDTH = 8) extends uvn_env;
+class fifo_env #(int unsigned FIFO_DEPTH = 32,int unsigned DATA_WIDTH = 8) extends uvm_env;
 
     `uvm_component_utils(fifo_env)
 
